@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Vehicle Holiday Controller – Preview</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { color-scheme: dark; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #0b0f14; color: #e4e8ef; }
+    header { background: #111926; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; }
+    h1 { margin: 0; font-size: 20px; }
+    section { padding: 12px 16px; }
+    .card { background: #141c29; border-radius: 10px; padding: 12px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+    button, select, input[type=range] { width: 100%; margin-top: 6px; padding: 8px; border-radius: 8px; border: 1px solid #1f2a3a; background: #182233; color: #e4e8ef; }
+    button { background: #1f6feb; border: none; cursor: pointer; font-weight: bold; }
+    button.danger { background: #c0392b; }
+    small { opacity: 0.7; }
+    .flex { display: flex; gap: 8px; align-items: center; }
+    .tag { padding: 2px 6px; border-radius: 6px; background: #1f2a3a; font-size: 12px; }
+    #debug { white-space: pre-wrap; font-size: 12px; background: #0f1622; padding: 8px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Vehicle Holiday Controller</h1>
+      <small id="status">Loading...</small>
+    </div>
+    <button class="danger">Panic Off</button>
+  </header>
+
+  <section>
+    <h2>Overview</h2>
+    <div id="channels" class="grid"></div>
+  </section>
+
+  <section class="card">
+    <h3>Scenes</h3>
+    <div id="scenes" class="grid"></div>
+    <div class="flex">
+      <input id="customScene" placeholder="Custom scene name" style="flex:1;" />
+      <button>Save Current</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Global Controls</h3>
+    <label>Night Mode Dimmer <span id="dimmerLabel"></span></label>
+    <input type="range" id="dimmer" min="0" max="100" value="100" />
+    <label>Safety Limit <span id="safetyLabel"></span></label>
+    <input type="range" id="safety" min="10" max="100" value="100" />
+    <button>Driving Mode (soft)</button>
+    <button>Showtime Mode (bright)</button>
+  </section>
+
+  <section class="card">
+    <h3>Debug</h3>
+    <details open>
+      <summary>Raw State JSON</summary>
+      <div id="debug"></div>
+    </details>
+  </section>
+
+  <script>
+    const state = {
+      wifi: { mode: 'AP', ssid: 'PicoXmasController' },
+      ip: '192.168.4.1',
+      uptime_s: 4523,
+      global: { dimmer: 0.82, safety_limit: 0.95 },
+      channels: [
+        { id:'CH1', name:'Roof Lights', gpio_pin:15, device_type:'light', group:'Roof', state:{ brightness:80, pattern:'showtime' }},
+        { id:'CH2', name:'Grille Lights', gpio_pin:14, device_type:'light', group:'Front', state:{ brightness:45, pattern:'driving' }},
+        { id:'CH3', name:'Reindeer Head', gpio_pin:13, device_type:'servo', group:'Front', state:{ current_angle:95, target_angle:120, mode:'sweep' }},
+        { id:'CH4', name:'Aux Relay', gpio_pin:12, device_type:'generic_output', group:'Rear', state:{ on:true }}
+      ],
+      scenes: [
+        { id:'calm', name:'Calm Cruise', description:'Soft white, smooth motion' },
+        { id:'north', name:'North Pole', description:'Colorful twinkle + blink' },
+        { id:'spooky', name:'Spooky Sleigh', description:'Low red lighting, jittery servos' },
+        { id:'show', name:'Showstopper', description:'Bright and fast patterns' }
+      ]
+    };
+
+    function render(){
+      document.getElementById('status').innerText = `Mode: ${state.wifi.mode} | IP: ${state.ip} | Uptime: ${state.uptime_s}s`;
+      document.getElementById('dimmer').value = Math.round(state.global.dimmer*100);
+      document.getElementById('safety').value = Math.round(state.global.safety_limit*100);
+      document.getElementById('dimmerLabel').innerText = `${Math.round(state.global.dimmer*100)}%`;
+      document.getElementById('safetyLabel').innerText = `${Math.round(state.global.safety_limit*100)}%`;
+      renderChannels();
+      renderScenes();
+      document.getElementById('debug').innerText = JSON.stringify(state, null, 2);
+    }
+
+    function renderChannels(){
+      const wrap = document.getElementById('channels');
+      wrap.innerHTML = '';
+      state.channels.forEach(ch => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+          <div class="flex" style="justify-content:space-between;">
+            <strong>${ch.name}</strong>
+            <span class="tag">${ch.device_type}</span>
+          </div>
+          <small>GPIO ${ch.gpio_pin} · Group ${ch.group}</small>
+        `;
+        if(ch.device_type === 'light'){
+          div.innerHTML += `
+            <label>Brightness: <span>${ch.state.brightness||0}%</span></label>
+            <input type="range" min="0" max="100" value="${ch.state.brightness||0}" />
+            <label>Pattern</label>
+            <select>
+              ${['steady','blink','fade','chase','sparkle','driving','showtime'].map(p=>`<option ${ch.state.pattern===p?'selected':''} value="${p}">${p}</option>`).join('')}
+            </select>
+          `;
+        } else if(ch.device_type === 'servo'){
+          div.innerHTML += `
+            <label>Angle: <span>${Math.round(ch.state.current_angle||90)}°</span></label>
+            <input type="range" min="0" max="180" value="${Math.round(ch.state.target_angle||90)}" />
+            <label>Mode</label>
+            <select>
+              ${['hold','sweep','pulse','jitter'].map(p=>`<option ${ch.state.mode===p?'selected':''} value="${p}">${p}</option>`).join('')}
+            </select>
+          `;
+        } else {
+          div.innerHTML += `<button>Toggle</button>`;
+        }
+        wrap.appendChild(div);
+      });
+    }
+
+    function renderScenes(){
+      const wrap = document.getElementById('scenes');
+      wrap.innerHTML = '';
+      state.scenes.forEach(sc => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `<strong>${sc.name}</strong><br/><small>${sc.description||''}</small><button>Apply</button>`;
+        wrap.appendChild(div);
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>
