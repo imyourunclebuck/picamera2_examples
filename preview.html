@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Vehicle Holiday Controller – Midnight Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root {
+  --bg: #020617;
+  --bg-alt: #020617;
+  --bg-card: #0f172a;
+  --bg-card-alt: #020617;
+  --accent: #38bdf8;
+  --accent-soft: #f97316;
+  --accent-green: #22c55e;
+  --text: #e5e7eb;
+  --text-muted: #9ca3af;
+  --border: #1f2937;
+  --danger: #f97373;
+  --radius-lg: 18px;
+  --radius-sm: 12px;
+  --shadow-soft: 0 16px 40px rgba(0,0,0,0.55);
+  --gap: 14px;
+  --font: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font);
+  background: radial-gradient(circle at top, #020617, #000000 65%);
+  color: var(--text);
+}
+body {
+  padding: 14px;
+}
+header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+header .title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+h1 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+header .subtitle {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  border: 1px solid rgba(148,163,184,0.5);
+  background: radial-gradient(circle at top, #0f172a, #020617);
+  box-shadow: 0 0 0 1px rgba(15,23,42,0.5);
+}
+.badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 7px;
+}
+.badge-dot.ap { background: var(--accent-soft); box-shadow: 0 0 10px rgba(249,115,22,0.8); }
+.badge-dot.sta { background: var(--accent-green); box-shadow: 0 0 10px rgba(34,197,94,0.8); }
+
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.status-pill {
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(55,65,81,0.8);
+  background: radial-gradient(circle at top, rgba(15,23,42,0.95), rgba(15,23,42,0.6));
+}
+
+/* Layout */
+main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+.section {
+  background: radial-gradient(circle at top left, rgba(30,64,175,0.15), rgba(15,23,42,0.97));
+  border-radius: var(--radius-lg);
+  padding: 10px;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(31,41,55,0.9);
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.section-title {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+.section-actions {
+  display: flex;
+  gap: 6px;
+}
+.section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Overview cards */
+#overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 9px;
+}
+.card {
+  background: linear-gradient(145deg, var(--bg-card), var(--bg-card-alt));
+  border-radius: var(--radius-sm);
+  padding: 9px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(circle at top, rgba(56,189,248,0.08), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.card:hover::before {
+  opacity: 1;
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.card-sub {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+.card-chip {
+  font-size: 0.64rem;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.4);
+}
+.card-chip.light { color: #facc15; border-color: rgba(250,204,21,0.55); }
+.card-chip.servo { color: #a5b4fc; border-color: rgba(129,140,248,0.7); }
+.card-chip.generic_output { color: #6ee7b7; border-color: rgba(34,197,94,0.7); }
+
+.card-main-row {
+  display: flex;
+  gap: 8px;
+}
+.card-main-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.card-main-right {
+  width: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.small-label {
+  font-size: 0.64rem;
+  color: var(--text-muted);
+}
+.small-value {
+  font-size: 0.7rem;
+}
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: #1e293b;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  border: 1px solid #020617;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  border: 1px solid #020617;
+}
+.badge-mini {
+  font-size: 0.62rem;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.35);
+}
+.badge-on { color: var(--accent-green); border-color: rgba(34,197,94,0.7); }
+.badge-off { color: #9ca3af; }
+.badge-angle { color: #a5b4fc; }
+
+/* Buttons */
+.btn {
+  font-size: 0.7rem;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.4);
+  background: radial-gradient(circle at top, #020617, #020617);
+  color: var(--text);
+  cursor: pointer;
+}
+.btn-ghost {
+  background: transparent;
+}
+.btn-primary {
+  border-color: rgba(248,250,252,0.4);
+  background: radial-gradient(circle at top, #f97316, #b91c1c);
+}
+.btn-danger {
+  border-color: rgba(248,113,113,0.7);
+  background: radial-gradient(circle at top, #fecaca, #7f1d1d);
+}
+.btn-sm {
+  font-size: 0.65rem;
+  padding: 3px 7px;
+}
+
+/* Selects */
+select {
+  background: #020617;
+  color: var(--text);
+  border-radius: 999px;
+  border: 1px solid rgba(55,65,81,0.9);
+  padding: 2px 7px;
+  font-size: 0.7rem;
+}
+
+/* Scenes */
+#scenes-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.scene-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.5);
+  font-size: 0.7rem;
+  cursor: pointer;
+  background: radial-gradient(circle at top, rgba(15,23,42,0.95), rgba(15,23,42,0.6));
+}
+.scene-pill.active {
+  border-color: var(--accent-soft);
+  background: radial-gradient(circle at top, rgba(249,115,22,0.25), rgba(15,23,42,1));
+}
+
+/* Channels table */
+#channels-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.7rem;
+}
+#channels-table th, #channels-table td {
+  padding: 4px 5px;
+  border-bottom: 1px solid rgba(31,41,55,0.95);
+}
+#channels-table th {
+  text-align: left;
+  color: var(--text-muted);
+}
+
+/* Settings */
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  font-size: 0.7rem;
+}
+.settings-row label {
+  color: var(--text-muted);
+}
+.settings-row input[type="text"],
+.settings-row input[type="password"] {
+  background: #020617;
+  border-radius: 999px;
+  border: 1px solid rgba(55,65,81,0.9);
+  padding: 3px 9px;
+  color: var(--text);
+  font-size: 0.7rem;
+}
+
+/* Debug */
+details.debug {
+  font-size: 0.7rem;
+}
+details.debug summary {
+  cursor: pointer;
+  list-style: none;
+}
+details.debug summary::-webkit-details-marker {
+  display: none;
+}
+#debug-json {
+  max-height: 160px;
+  overflow: auto;
+  background: #020617;
+  padding: 7px;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  border: 1px solid #111827;
+}
+
+/* Responsive */
+@media (min-width: 820px) {
+  body {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="title-row">
+    <div>
+      <h1>Vehicle Holiday Controller</h1>
+      <div class="subtitle">Midnight Dashboard UI</div>
+    </div>
+    <div id="wifi-badge" class="badge">
+      <span class="badge-dot ap"></span>
+      <span id="wifi-badge-text">AP MODE</span>
+    </div>
+  </div>
+  <div class="status-row">
+    <div class="status-pill">IP: <span id="ip-span">-</span></div>
+    <div class="status-pill">Uptime: <span id="uptime-span">-</span></div>
+    <div class="status-pill">Temp: <span id="temp-span">-</span></div>
+    <div class="status-pill">Night Dimmer: <span id="night-span">-</span></div>
+    <div class="status-pill">Power Limit: <span id="limit-span">-</span></div>
+  </div>
+</header>
+
+<main>
+  <section class="section" id="section-overview">
+    <div class="section-header">
+      <div class="section-title">Overview</div>
+      <div class="section-actions">
+        <button class="btn btn-sm btn-danger" onclick="sendPanic()">Panic Off</button>
+      </div>
+    </div>
+    <div class="section-body">
+      <div id="overview-grid"></div>
+    </div>
+  </section>
+
+  <section class="section" id="section-scenes">
+    <div class="section-header">
+      <div class="section-title">Scenes</div>
+      <div class="section-actions">
+        <button class="btn btn-sm btn-primary" onclick="saveScenePrompt()">Save Current</button>
+      </div>
+    </div>
+    <div class="section-body">
+      <div id="scenes-list"></div>
+    </div>
+  </section>
+
+  <section class="section" id="section-channels">
+    <div class="section-header">
+      <div class="section-title">Channels & Pins</div>
+      <div class="section-actions">
+        <span style="font-size:0.7rem;color:var(--text-muted);">Tap fields to edit</span>
+      </div>
+    </div>
+    <div class="section-body">
+      <table id="channels-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>GPIO</th>
+            <th>Type</th>
+            <th>Group</th>
+          </tr>
+        </thead>
+        <tbody id="channels-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section" id="section-settings">
+    <div class="section-header">
+      <div class="section-title">Advanced & Settings</div>
+      <div class="section-actions">
+        <button class="btn btn-sm btn-danger" onclick="resetDefaults()">Factory Reset</button>
+        <button class="btn btn-sm" onclick="rebootPico()">Reboot</button>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="settings-row">
+        <label>Night Mode Dimmer</label>
+        <input type="range" min="0" max="100" value="100" oninput="onGlobalSlider('night', this.value)">
+      </div>
+      <div class="settings-row">
+        <label>Global Brightness Limit</label>
+        <input type="range" min="10" max="100" value="100" oninput="onGlobalSlider('limit', this.value)">
+      </div>
+      <hr style="border-color:#1f2937;border-width:0.5px;width:100%;opacity:0.8;">
+      <div class="settings-row">
+        <label>Wi-Fi Mode:</label>
+        <select id="wifi-mode-select" onchange="updateWifiConfigFromUI()">
+          <option value="AP">AP (Direct)</option>
+          <option value="STA">STA (Join Wi-Fi)</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <label>STA SSID</label>
+        <input type="text" id="sta-ssid" placeholder="Your Wi-Fi name">
+      </div>
+      <div class="settings-row">
+        <label>STA Password</label>
+        <input type="password" id="sta-pass" placeholder="••••••••">
+      </div>
+      <div class="settings-row">
+        <label>AP SSID</label>
+        <input type="text" id="ap-ssid" placeholder="ranger_pico">
+      </div>
+      <div class="settings-row">
+        <label>AP Password</label>
+        <input type="text" id="ap-pass" placeholder="(blank = open)">
+      </div>
+      <div class="settings-row">
+        <button class="btn btn-sm btn-primary" onclick="saveWifiConfig()">Save Wi-Fi Config</button>
+      </div>
+      <div style="font-size:0.65rem;color:var(--text-muted);">
+        STA changes take effect after reboot. AP mode is always available as fallback.
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="section-debug">
+    <div class="section-header">
+      <div class="section-title">Debug & Raw State</div>
+    </div>
+    <div class="section-body">
+      <details class="debug">
+        <summary>Show JSON state & logs</summary>
+        <pre id="debug-json"></pre>
+      </details>
+    </div>
+  </section>
+</main>
+
+<script>
+let appState = null;
+
+function fetchState() {
+  fetch("/api/state")
+    .then(r => r.json())
+    .then(s => {
+      appState = s;
+      renderApp();
+    })
+    .catch(e => console.log("state error", e));
+}
+
+function sendControl(payload) {
+  fetch("/api/control", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload || {})
+  }).catch(e => console.log("control error", e));
+}
+
+/* Overview */
+function renderOverview() {
+  const grid = document.getElementById("overview-grid");
+  if (!appState || !grid) return;
+  const chans = appState.channels || [];
+  let html = "";
+  chans.forEach(ch => {
+    const light = ch.light || {};
+    const servo = ch.servo || {};
+    const isLight = ch.device_type === "light" || ch.device_type === "generic_output";
+    const isServo = ch.device_type === "servo";
+    const on = !!light.on;
+    const brightness = Math.round((light.brightness || 0) * 100);
+    const angle = Math.round(servo.angle || 0);
+    const pattern = light.pattern || "steady";
+    const mode = servo.mode || "idle";
+
+    html += `
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">${escapeHtml(ch.name || ch.id)}</div>
+            <div class="card-sub">${escapeHtml(ch.id)} · GPIO ${ch.gpio}</div>
+          </div>
+          <div class="card-main-right">
+            <div class="card-chip ${ch.device_type}">
+              ${ch.device_type === "light" ? "Light" :
+                ch.device_type === "servo" ? "Servo" :
+                "Output"}
+            </div>
+            <button class="btn btn-sm btn-ghost" onclick="toggleLight('${ch.id}')">
+              ${on ? "Turn Off" : "Turn On"}
+            </button>
+          </div>
+        </div>
+        <div class="card-main-row">
+          <div class="card-main-left">
+            ${isLight ? `
+            <div class="small-label">Brightness</div>
+            <div class="slider-row">
+              <input type="range" min="0" max="100" value="${brightness}"
+                oninput="onLightBrightness('${ch.id}', this.value)">
+              <span class="small-value">${brightness}%</span>
+            </div>
+            <div class="small-label">Pattern</div>
+            <div>
+              <select onchange="onLightPattern('${ch.id}', this.value)">
+                ${renderPatternOptions(pattern)}
+              </select>
+            </div>
+            ` : ""}
+            ${isServo ? `
+            <div class="small-label">Servo Angle</div>
+            <div class="slider-row">
+              <input type="range" min="0" max="180" value="${angle}"
+                oninput="onServoAngle('${ch.id}', this.value)">
+              <span class="small-value">${angle}°</span>
+            </div>
+            <div class="small-label">Motion</div>
+            <div>
+              <select onchange="onServoMode('${ch.id}', this.value)">
+                ${renderServoModeOptions(mode)}
+              </select>
+            </div>
+            ` : ""}
+          </div>
+          <div class="card-main-right">
+            ${isLight ? `
+            <div class="badge-mini ${on ? "badge-on" : "badge-off"}">
+              ${on ? "ON" : "OFF"}
+            </div>
+            <div class="small-label" style="margin-top:4px;">${pattern}</div>
+            ` : ""}
+            ${isServo ? `
+            <div class="badge-mini badge-angle">${angle}°</div>
+            <div class="small-label" style="margin-top:4px;">${mode}</div>
+            ` : ""}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  grid.innerHTML = html;
+}
+
+function renderPatternOptions(selected) {
+  const patterns = [
+    "steady","blink","fade","chase",
+    "sparkle","driving","showtime"
+  ];
+  return patterns.map(p =>
+    `<option value="${p}" ${p===selected?"selected":""}>${p}</option>`
+  ).join("");
+}
+
+function renderServoModeOptions(selected) {
+  const modes = ["idle","hold","goto","sweep","pulse","jitter"];
+  return modes.map(m =>
+    `<option value="${m}" ${m===selected?"selected":""}>${m}</option>`
+  ).join("");
+}
+
+function toggleLight(id) {
+  sendControl({action:"set_light", channel_id:id, toggle:true});
+}
+function onLightBrightness(id, val) {
+  sendControl({action:"set_light", channel_id:id, brightness: val / 100.0});
+}
+function onLightPattern(id, pattern) {
+  sendControl({action:"set_light", channel_id:id, pattern:pattern});
+}
+function onServoAngle(id, val) {
+  sendControl({action:"set_servo", channel_id:id, angle: parseInt(val,10), mode:"goto"});
+}
+function onServoMode(id, mode) {
+  sendControl({action:"set_servo", channel_id:id, mode:mode});
+}
+
+/* Scenes */
+function renderScenes() {
+  const el = document.getElementById("scenes-list");
+  if (!appState || !el) return;
+  const builtin = appState.builtin_scenes || [];
+  const user = appState.user_scenes || [];
+  const active = appState.active_scene || "";
+
+  let html = "";
+  if (builtin.length) {
+    builtin.forEach(n => {
+      html += `
+        <div class="scene-pill ${n===active?"active":""}"
+             onclick="applyScene('${n}')">
+          <span>${escapeHtml(n)}</span>
+        </div>`;
+    });
+  }
+  if (user.length) {
+    html += `<div style="flex-basis:100%;height:4px;"></div>`;
+    user.forEach(n => {
+      html += `
+        <div class="scene-pill ${n===active?"active":""}">
+          <span onclick="applyScene('${n}')">${escapeHtml(n)}</span>
+          <button class="btn btn-sm btn-ghost"
+                  style="padding:0 4px;margin-left:4px;"
+                  onclick="deleteScene('${n}');event.stopPropagation();">×</button>
+        </div>`;
+    });
+  }
+  if (!html) {
+    html = `<span style="font-size:0.7rem;color:var(--text-muted);">
+      No scenes yet. Use "Save Current" to capture one.
+    </span>`;
+  }
+  el.innerHTML = html;
+}
+
+function applyScene(name) {
+  sendControl({action:"apply_scene", name:name});
+}
+function saveScenePrompt() {
+  const n = prompt("Scene name");
+  if (n && n.trim().length > 0) {
+    sendControl({action:"save_scene", name:n.trim()});
+  }
+}
+function deleteScene(name) {
+  if (!confirm("Delete scene '" + name + "'?")) return;
+  sendControl({action:"delete_scene", name:name});
+}
+
+/* Channels table */
+function renderChannelsTable() {
+  const tbody = document.getElementById("channels-tbody");
+  if (!appState || !tbody) return;
+  const chans = appState.channels || [];
+  let html = "";
+  chans.forEach(ch => {
+    html += `
+      <tr>
+        <td>${escapeHtml(ch.id)}</td>
+        <td onclick="editChannelField('${ch.id}','name','${escapeHtmlAttr(ch.name)}')">
+          ${escapeHtml(ch.name)}
+        </td>
+        <td onclick="editChannelField('${ch.id}','gpio','${ch.gpio}')">
+          ${ch.gpio}
+        </td>
+        <td onclick="editChannelType('${ch.id}','${ch.device_type}')">
+          ${ch.device_type}
+        </td>
+        <td onclick="editChannelField('${ch.id}','group','${escapeHtmlAttr(ch.group||"")}')">
+          ${escapeHtml(ch.group || "")}
+        </td>
+      </tr>
+    `;
+  });
+  tbody.innerHTML = html;
+}
+
+function editChannelField(id, field, current) {
+  const val = prompt("Set " + field + " for " + id, current || "");
+  if (val === null) return;
+  const payload = {action:"set_channel_meta", channel_id:id};
+  payload[field] = field==="gpio" ? parseInt(val,10) : val;
+  sendControl(payload);
+}
+
+function editChannelType(id, current) {
+  const val = prompt("Type for " + id + " (light/servo/generic_output)", current || "light");
+  if (!val) return;
+  sendControl({action:"set_channel_meta", channel_id:id, device_type:val});
+}
+
+/* Settings & global */
+function onGlobalSlider(kind, value) {
+  const v = parseInt(value,10);
+  if (kind === "night") {
+    document.getElementById("night-span").textContent = (v) + "%";
+    sendControl({action:"set_global", night_dimmer: v/100.0});
+  } else if (kind === "limit") {
+    document.getElementById("limit-span").textContent = (v) + "%";
+    sendControl({action:"set_global", global_limit: v/100.0});
+  }
+}
+
+function sendPanic() {
+  if (!confirm("Turn everything OFF immediately?")) return;
+  sendControl({action:"panic"});
+}
+
+function resetDefaults() {
+  if (!confirm("Factory reset configuration? (Device will reboot)")) return;
+  sendControl({action:"reset_defaults"});
+  setTimeout(() => { rebootPico(); }, 400);
+}
+function rebootPico() {
+  sendControl({action:"reboot"});
+}
+
+/* Wi-Fi config */
+function updateWifiConfigFromUI() {
+  // kept for future: currently saveWifiConfig reads values directly
+}
+function saveWifiConfig() {
+  const mode = document.getElementById("wifi-mode-select").value;
+  const staSsid = document.getElementById("sta-ssid").value;
+  const staPass = document.getElementById("sta-pass").value;
+  const apSsid = document.getElementById("ap-ssid").value;
+  const apPass = document.getElementById("ap-pass").value;
+  sendControl({
+    action:"set_wifi",
+    mode:mode,
+    sta_ssid:staSsid,
+    sta_password:staPass,
+    ap_ssid:apSsid,
+    ap_password:apPass
+  });
+}
+
+/* Header & debug */
+function renderHeader() {
+  if (!appState) return;
+  const wifiBadge = document.getElementById("wifi-badge");
+  const wifiBadgeText = document.getElementById("wifi-badge-text");
+  const ipSpan = document.getElementById("ip-span");
+  const uptimeSpan = document.getElementById("uptime-span");
+  const tempSpan = document.getElementById("temp-span");
+  const nightSpan = document.getElementById("night-span");
+  const limitSpan = document.getElementById("limit-span");
+  const wifiModeSel = document.getElementById("wifi-mode-select");
+
+  const mode = appState.wifi_mode || "AP";
+  ipSpan.textContent = appState.ip || "-";
+
+  const ms = appState.uptime_ms || 0;
+  const sec = Math.floor(ms / 1000);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  uptimeSpan.textContent = h + "h " + m + "m " + s + "s";
+
+  const temp = appState.internal && appState.internal.temp_c != null
+      ? appState.internal.temp_c + "°C"
+      : "-";
+  tempSpan.textContent = temp;
+
+  const night = appState.night_dimmer != null ? Math.round(appState.night_dimmer * 100) : 100;
+  const limit = appState.global_limit != null ? Math.round(appState.global_limit * 100) : 100;
+  nightSpan.textContent = night + "%";
+  limitSpan.textContent = limit + "%";
+
+  if (mode === "AP") {
+    wifiBadgeText.textContent = "AP MODE";
+    wifiBadge.querySelector(".badge-dot").className = "badge-dot ap";
+  } else {
+    wifiBadgeText.textContent = "STA MODE";
+    wifiBadge.querySelector(".badge-dot").className = "badge-dot sta";
+  }
+
+  if (wifiModeSel && appState.cfg_wifi_mode) {
+    wifiModeSel.value = appState.cfg_wifi_mode;
+  }
+
+  const dbg = document.getElementById("debug-json");
+  if (dbg) {
+    dbg.textContent = JSON.stringify(appState, null, 2);
+  }
+}
+
+function escapeHtml(str) {
+  if (str == null) return "";
+  return String(str)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;");
+}
+function escapeHtmlAttr(str) {
+  if (str == null) return "";
+  return String(str).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function renderApp() {
+  if (!appState) return;
+  renderHeader();
+  renderOverview();
+  renderScenes();
+  renderChannelsTable();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  fetchState();
+  setInterval(fetchState, 800);
+});
+</script>
+</body>
+</html>
