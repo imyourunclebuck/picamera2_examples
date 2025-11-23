@@ -14,8 +14,8 @@ import time
 from machine import PWM, Pin
 
 # --------------------------- Configuration ---------------------------------
-AP_SSID = "PicoXmasController"
-AP_PASSWORD = "pico-holiday"
+AP_SSID = "picopico"
+AP_PASSWORD = "picopico"
 CONFIG_FILE = "config.json"
 HTTP_PORT = 80
 
